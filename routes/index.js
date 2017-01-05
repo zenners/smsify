@@ -5,11 +5,15 @@ var crypto = require('crypto')
 var key = require('../secret')
 
 var mongoose = require('mongoose');
-var smsSchema = require('../models/sms');
+var smsSchema = require('../models/log');
 
 var Sms  = mongoose.model('Sms', smsSchema);
 
+var querystring = require('querystring');
+
 var url = 'https://post.chikka.com/smsapi/request'
+
+axios.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded';
 
 // utility functions, move somewhere else
 
@@ -55,23 +59,22 @@ router.get('/sms', function(req,res,next){
   // build object for request
   var obj = {
     message_type: 'SEND',
-    mobile_number: '639174036834',
-    shortcode: '29290787',
-    message_id: randomGen(10),
-    message: 'hello world',
+    mobile_number: '639174036834', //change this
+    shortcode: '29290787', // use your shortcode
+    message_id: randomGen(5), // dont generate something too long
+    message: 'sendnudes', // encodeUriComponent(str) this for longer messages
     client_id: key.chika_client_id,
     secret_key: key.chika_secret,
   }
-
   
-  
-  axios.post(url, obj)
-    .then((res) =>{
-      console.log(res.data)
+  axios.post(url, querystring.stringify(obj))
+    .then((data) =>{
+      console.log(data.data)
       res.send(obj)
     })
     .catch((err) => {
       console.log(err)
+      res.send('eror')
     })
 
 

@@ -4,13 +4,32 @@ var router = express.Router();
 var crypto = require('crypto')
 var key = require('../secret')
 
+var mongoose = require('mongoose');
+var smsSchema = require('../models/sms');
+
+var Sms  = mongoose.model('Sms', smsSchema);
+
+var url = 'https://post.chikka.com/smsapi/request'
+
+// utility functions, move somewhere else
+
 function randomGen(bytes){
   return crypto.randomBytes(bytes).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/\=/g, '');
 }
 
+function cellReplace(num){
+  var newNum = num.split('')
+  if(newNum[0] == '0'){
+    newNum[0] = '63'
+    var z = newNum.join('')
+    return z
+  } 
+  return num
+};
 
 
-var url = 'https://post.chikka.com/smsapi/request'
+
+
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
@@ -32,6 +51,8 @@ router.post('/orders', function(req, res, next) {
 
 router.get('/sms', function(req,res,next){
   console.log(req.body)
+
+  // build object for request
   var obj = {
     message_type: 'SEND',
     mobile_number: '639174036834',
@@ -54,6 +75,18 @@ router.get('/sms', function(req,res,next){
     })
 
 
+})
+
+router.post('/delivery', function(req,res,next){
+  if (req.body.message_type == "OUTGOING"){
+    //just dump into mongodb
+      Sms.save(req.body, function(err, res){
+        if(err) console.log(err)
+
+        res.send('saved')
+      })
+       
+  }
 })
 
 module.exports = router;

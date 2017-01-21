@@ -27,10 +27,27 @@ function cellReplace(num){
     newNum[0] = '63'
     var z = newNum.join('')
     return z
-  } 
+  }
   return num
 };
 
+function verifyShopifyHook(req) {
+    var digest = crypto.createHmac('SHA256', SECRET)
+            .update(new Buffer(req.body, 'utf8'))
+            .digest('base64');
+
+    return digest === req.headers['X-Shopify-Hmac-Sha256'];
+}
+
+function handleRequest(req, res) {
+    if (verifyShopifyHook(req)) {
+        res.writeHead(200);
+        res.end('Verified webhook');
+    } else {
+        res.writeHead(401);
+        res.end('Unverified webhook');
+    }
+}
 
 
 
@@ -54,7 +71,7 @@ router.post('/orders', function(req, res, next) {
 });
 
 router.get('/sms', function(req,res,next){
-  console.log(req.body)
+  console.log(req.headers)
 
   // build object for request
   var obj = {
@@ -66,8 +83,8 @@ router.get('/sms', function(req,res,next){
     client_id: key.chika_client_id,
     secret_key: key.chika_secret,
   }
-  
-  axios.post(url, querystring.stringify(obj))
+
+  axios.post(url, obj)
     .then((data) =>{
       console.log(data.data)
       res.send(obj)
@@ -80,6 +97,31 @@ router.get('/sms', function(req,res,next){
 
 })
 
+router.post('/ordercreated', function(req,res,next){
+  console.log(req.headers)
+
+  var msg = `Hi ${req.body.customer.first_name} ${req.body.customer.last_name}, we received your order `
+  console.log(msg)
+  var obj = {
+    message_type: 'SEND',
+    mobile_number: '639174036834', //change this
+    shortcode: '29290787', // use your shortcode
+    message_id: randomGen(5), // dont generate something too long
+    message: msg, // encodeUriComponent(str) this for longer messages
+    client_id: key.chika_client_id,
+    secret_key: key.chika_secret,
+  }
+  axios.post(url, querystring.stringify(obj))
+    .then((data) =>{
+      console.log(data.data)
+      res.send(obj)
+    })
+    .catch((err) => {
+      console.log(err)
+      res.send('eror')
+    })
+})
+
 router.post('/delivery', function(req,res,next){
   if (req.body.message_type == "OUTGOING"){
     //just dump into mongodb
@@ -88,7 +130,7 @@ router.post('/delivery', function(req,res,next){
 
         res.send('saved')
       })
-       
+
   }
 })
 
